@@ -1,11 +1,11 @@
-# JSON Linter Pro 🚀
+# Jsonic - JSON Linter Pro 🚀
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 A modern, feature-rich JSON validation and formatting tool built as a Progressive Web App (PWA). Validate, format, and debug JSON with ease!
 
-👉 [Live Demo](https://simkeyur.io/Jsonic)
+👉 [Live Demo](https://simkeyur.github.io/Jsonic)
 
 ![JSON Linter Pro Screenshot](screenshot.png) <!-- Add a screenshot later -->
 
