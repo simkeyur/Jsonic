@@ -1,6 +1,6 @@
 const CACHE_NAME = 'jsonic-v1';
 const ASSETS = [
-    '/',
+    '/jsonic/',
     '/index.html',
     '/manifest.json',
     '/icons/icon-192x192.png',
