@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern JSON Linter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/theme/darcula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/scroll/simplescrollbars.min.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --divider-width: 5px;
+            --navbar-height: 56px;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #e9ecef;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #000 !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.4);
+            height: var(--navbar-height);
+        }
+
+        .main-container {
+            height: calc(100vh - var(--navbar-height));
+            display: flex;
+        }
+
+        .editor-container, .console-container {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .editor-wrapper {
+            height: calc(100% - 72px);
+            position: relative;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            padding: 1rem 0;
+        }
+
+        .divider {
+            width: var(--divider-width);
+            background: #2d2d2d;
+            cursor: col-resize;
+            transition: background 0.2s;
+        }
+
+        .divider:hover {
+            background: #3d3d3d;
+        }
+
+        .validate-btn {
+            background: linear-gradient(135deg, #1a1a1a, #000);
+            border: 1px solid #3d3d3d;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 300px;
+            letter-spacing: 0.5px;
+        }
+
+        .validate-btn:hover {
+            background: linear-gradient(135deg, #000, #1a1a1a);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .console {
+            background: #121212;
+            border-radius: 6px;
+            height: 100%;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            border: 1px solid #2d2d2d;
+        }
+
+        .error-message {
+            background: #2b0b0e;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+        }
+
+        .success-message {
+            background: #0d2b1a;
+            border-left: 4px solid #28a745;
+            color: #90ee90;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .error-line {
+            background: rgba(220, 53, 69, 0.15) !important;
+            animation: error-pulse 0.5s ease-in-out;
+        }
+
+        @keyframes error-pulse {
+            0% { background: rgba(220, 53, 69, 0) }
+            50% { background: rgba(220, 53, 69, 0.3) }
+            100% { background: rgba(220, 53, 69, 0.15) }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Jsonic - JSON Linter Pro</span>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="editor-container flex-grow-1">
+            <div class="editor-wrapper">
+                <textarea id="editor"></textarea>
+            </div>
+            <div class="text-center py-3 border-top border-dark">
+                <button class="validate-btn rounded-pill" onclick="validateJSON()">
+                    <i class="bi bi-check-circle me-2"></i>Validate JSON
+                </button>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="console-container flex-grow-1 p-3">
+            <div class="console">
+                <div id="validation-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & CodeMirror -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/scroll/simplescrollbars.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <script>
+        // Enhanced CodeMirror Setup
+        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'application/json',
+            theme: 'darcula',
+            lineNumbers: true,
+            lineWrapping: true,
+            tabSize: 2,
+            indentWithTabs: false,
+            smartIndent: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            scrollbarStyle: 'simple',
+            viewportMargin: Infinity,
+            extraKeys: {
+                "Ctrl-Space": "autocomplete",
+                "Ctrl-Enter": validateJSON
+            }
+        });
+
+        // Resizable Panels
+        let isDragging = false;
+        const divider = document.querySelector('.divider');
+        
+        divider.addEventListener('mousedown', () => {
+            isDragging = true;
+            document.body.classList.add('cursor-pointer');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const container = document.querySelector('.main-container');
+            const rect = container.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width * 100;
+            document.querySelector('.editor-container').style.width = `${percent}%`;
+            document.querySelector('.console-container').style.width = `${100 - percent}%`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.classList.remove('cursor-pointer');
+        });
+
+        // Enhanced Validation Function
+        function validateJSON() {
+            const resultEl = document.getElementById('validation-result');
+            resultEl.innerHTML = '';
+            
+            try {
+                const json = JSON.parse(editor.getValue());
+                const formatted = JSON.stringify(json, null, 2)
+                    .replace(/ /g, '&nbsp;')
+                    .replace(/\n/g, '<br>');
+                
+                resultEl.innerHTML = `
+                    <div class="success-message">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Valid JSON
+                        <pre class="mt-2">${formatted}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                const errorInfo = parseError(error.message);
+                resultEl.innerHTML = `
+                    <div class="error-message">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-x-circle-fill me-2"></i>
+                            <strong>Error at line ${errorInfo.line}:</strong>
+                        </div>
+                        <div>${errorInfo.message}</div>
+                        ${errorInfo.suggestion ? `
+                        <div class="mt-2 text-warning">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            ${errorInfo.suggestion}
+                        </div>` : ''}
+                    </div>
+                `;
+                
+                // Add error marker
+                editor.setCursor({line: errorInfo.line - 1, ch: errorInfo.column - 1});
+                const lineHandle = editor.addLineClass(
+                    errorInfo.line - 1, 
+                    'background', 
+                    'error-line'
+                );
+                
+                setTimeout(() => {
+                    editor.removeLineClass(lineHandle, 'background', 'error-line');
+                }, 2000);
+            }
+        }
+
+        function parseError(message) {
+            const lineMatch = message.match(/line (\d+)/);
+            const columnMatch = message.match(/column (\d+)/);
+            return {
+                line: lineMatch ? parseInt(lineMatch[1]) : 1,
+                column: columnMatch ? parseInt(columnMatch[1]) : 1,
+                message: message.replace(/^JSON.parse: /, ''),
+                suggestion: getSuggestion(message)
+            };
+        }
+
+        function getSuggestion(message) {
+            const suggestions = {
+                'Unexpected token': 'Check for missing commas or brackets',
+                'Unexpected end': 'Check for missing closing brace/bracket',
+                'expected property name': 'Check for missing quotes around property names',
+                'expected colon': 'Missing colon after property name'
+            };
+            
+            return Object.entries(suggestions).find(([key]) => 
+                message.includes(key)
+            )?.[1] || 'Check syntax formatting';
+        }
+    </script>
+</body>
+</html>
